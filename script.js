@@ -27,40 +27,23 @@ form.onsubmit = async function(event) {
         return;
     }
 
-    // Send the reCAPTCHA token to the backend for verification
-    const response = await fetch('/verify-recaptcha/', {
+    // Create a new FormData object to include the reCAPTCHA token
+    const formData = new FormData(form);
+
+    // Append the reCAPTCHA token to the form data
+    formData.append('recaptcha_token', recaptchaResponse);
+
+    // Send the form data to the backend
+    const submitResponse = await fetch(form.action, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: recaptchaResponse })
+        body: formData,
     });
 
-    const data = await response.json();
+    const submitData = await submitResponse.json();
 
-    if (data.message === "reCAPTCHA verified successfully!") {
-        alert("reCAPTCHA verification successful!");
-
-        // Create a new FormData object to include the reCAPTCHA token
-        const formData = new FormData(form);
-
-        // Append the reCAPTCHA token to the form data
-        formData.append('recaptcha_token', recaptchaResponse);
-
-        // Send the form data to the backend
-        const submitResponse = await fetch('/submit/', {
-            method: 'POST',
-            body: formData,
-        });
-
-        const submitData = await submitResponse.json();
-
-        if (submitData.message === "Form submitted successfully!") {
-            alert("Form submitted successfully!");
-        } else {
-            alert("There was an issue with form submission.");
-        }
+    if (submitData.message === "Form submitted successfully!") {
+        alert("Form submitted successfully!");
     } else {
-        alert("reCAPTCHA verification failed");
+        alert("There was an issue with form submission.");
     }
 };
