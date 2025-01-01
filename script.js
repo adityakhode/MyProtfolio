@@ -1,4 +1,3 @@
-// Smooth scrolling
 document.querySelectorAll('.nav-links a').forEach(link => {
     link.addEventListener('click', e => {
         e.preventDefault();
@@ -15,34 +14,53 @@ hamburger.addEventListener('click', () => {
     navLinks.classList.toggle('active');
 });
 
+const form = document.getElementById('myForm');
 
-        const form = document.getElementById('myForm');
+form.onsubmit = async function(event) {
+    event.preventDefault();
 
-        form.onsubmit = async function(event) {
-            event.preventDefault();
+    // Get the reCAPTCHA token
+    const recaptchaResponse = grecaptcha.getResponse();
 
-            const recaptchaResponse = grecaptcha.getResponse();
+    if (recaptchaResponse === "") {
+        alert("Please complete the reCAPTCHA");
+        return;
+    }
 
-            if (recaptchaResponse === "") {
-                alert("Please complete the reCAPTCHA");
-                return;
-            }
+    // Send the reCAPTCHA token to the backend for verification
+    const response = await fetch('/verify-recaptcha/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: recaptchaResponse })
+    });
 
-            // Send the reCAPTCHA token to the backend for verification
-            const response = await fetch('/verify-recaptcha/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: recaptchaResponse })
-            });
+    const data = await response.json();
 
-            const data = await response.json();
+    if (data.message === "reCAPTCHA verified successfully!") {
+        alert("reCAPTCHA verification successful!");
 
-            if (data.message === "reCAPTCHA verified successfully!") {
-                alert("reCAPTCHA verification successful!");
-                // Submit the form or proceed with further actions
-            } else {
-                alert("reCAPTCHA verification failed");
-            }
-        };
+        // Create a new FormData object to include the reCAPTCHA token
+        const formData = new FormData(form);
+
+        // Append the reCAPTCHA token to the form data
+        formData.append('recaptcha_token', recaptchaResponse);
+
+        // Send the form data to the backend
+        const submitResponse = await fetch('/submit/', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const submitData = await submitResponse.json();
+
+        if (submitData.message === "Form submitted successfully!") {
+            alert("Form submitted successfully!");
+        } else {
+            alert("There was an issue with form submission.");
+        }
+    } else {
+        alert("reCAPTCHA verification failed");
+    }
+};
